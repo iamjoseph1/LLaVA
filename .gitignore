@@ -33,3 +33,7 @@ ckpts*
 
 # Demo
 serve_images/
+
+# Dataset
+data_preprocess/droid_1_0_1
+data_preprocess/robotwin
