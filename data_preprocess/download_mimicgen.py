@@ -12,8 +12,9 @@ from huggingface_hub import hf_hub_download, HfApi
 # User settings
 # =========================
 REPO_ID = "amandlek/mimicgen_datasets"
-REMOTE_DIR = "core"
-OUT_DIR = Path("./mimicgen/core")
+REMOTE_DIR = "robot"
+TASK_NAME = "square_d1_panda"
+OUT_DIR = Path(f"./mimicgen/robot/{TASK_NAME}")
 VIDEO_OUT_DIR = OUT_DIR / "video"
 STRUCTURE_SUFFIX = "_demo_structure.json"
 DEFAULT_VIDEO_FPS = 20.0
@@ -24,7 +25,7 @@ MAX_DEMO_VIDEOS = 500
 TARGET_FILES = [
     # "coffee_d0.hdf5",
     # "square_d0.hdf5",
-    "nut_assembly_d0.hdf5",
+    f"{TASK_NAME}.hdf5",
     # "pick_place_d0.hdf5",
 ]
 
@@ -53,7 +54,7 @@ def download_hdf5_file(filename: str, out_dir: str | Path, token: str | None = N
         amandlek/mimicgen_datasets
 
     and save it as:
-        mimicgen/core/{filename}
+        mimicgen/{remote_dir}/{filename}
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
