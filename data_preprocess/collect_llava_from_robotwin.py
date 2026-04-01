@@ -18,7 +18,7 @@ TASK_VARIANT = "franka_randomized_500"
 START_VIDEO_INDEX = 0
 NUM_VIDEOS = 2
 NEXT_VIDEO_DELAY_SECONDS = 1.0
-PLAYBACK_SPEED = 0.5
+PLAYBACK_SPEED = 0.3
 
 VIDEO_DIR = DATASET_ROOT / TASK_NAME / TASK_VARIANT / "video"
 INSTRUCTIONS_DIR = DATASET_ROOT / TASK_NAME / TASK_VARIANT / "instructions"
@@ -107,7 +107,7 @@ def collect_video_paths() -> list[Path]:
     if not video_paths:
         raise FileNotFoundError(f"No .mp4 files found in {VIDEO_DIR}")
 
-    selected = video_paths[START_VIDEO_INDEX:START_VIDEO_INDEX + NUM_VIDEOS]
+    selected = video_paths[START_VIDEO_INDEX:]
     if not selected:
         raise ValueError(
             f"No videos available from START_VIDEO_INDEX={START_VIDEO_INDEX}"
@@ -122,19 +122,35 @@ def save_capture(frame, video_label: str, prompt: str, annotations: list[dict]) 
     if not ok:
         raise RuntimeError(f"Failed to write image: {image_path}")
 
-    annotations.append(build_annotation(image_path, video_label, prompt))
+    new_annotation = build_annotation(image_path, video_label, prompt)
+    image_path_str = new_annotation["image"]
+    existing_index = next(
+        (
+            index
+            for index, annotation in enumerate(annotations)
+            if annotation.get("image") == image_path_str
+        ),
+        None,
+    )
+    if existing_index is None:
+        annotations.append(new_annotation)
+        action = "appended"
+    else:
+        annotations[existing_index] = new_annotation
+        action = "updated"
+
     save_annotations(annotations)
-    print(f"[OK] Saved {image_path.name} & appended {ANNOTATIONS_PATH.name}")
+    print(f"[OK] Saved {image_path.name} & {action} {ANNOTATIONS_PATH.name}")
 
 
 def play_and_maybe_capture(
     video_path: Path,
     annotations: list[dict],
-) -> bool:
+) -> str:
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         print(f"[ERROR] Could not open video: {video_path}")
-        return False
+        return "error"
 
     video_label = video_path.stem
     prompt = sample_human_prompt(video_label)
@@ -156,7 +172,7 @@ def play_and_maybe_capture(
         display_frame = frame.copy()
         cv2.putText(
             display_frame,
-            f"{video_label} | frame {frame_index} | SPACE=capture, q=quit",
+            f"{video_label} | frame {frame_index} | SPACE=capture, ENTER=skip, q=quit",
             (20, 35),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
@@ -171,15 +187,20 @@ def play_and_maybe_capture(
             save_capture(current_frame, video_label, prompt, annotations)
             capture.release()
             cv2.waitKey(int(NEXT_VIDEO_DELAY_SECONDS * 1000))
-            return True
+            return "captured"
+        if key in (10, 13):
+            capture.release()
+            print(f"[INFO] Skipped video: {video_label}")
+            cv2.waitKey(int(NEXT_VIDEO_DELAY_SECONDS * 1000))
+            return "skipped"
         if key == ord("q"):
             capture.release()
-            return False
+            return "quit"
 
     capture.release()
     print(f"[INFO] Video ended without capture: {video_label}")
     cv2.waitKey(int(NEXT_VIDEO_DELAY_SECONDS * 1000))
-    return True
+    return "ended"
 
 
 def main() -> None:
@@ -190,25 +211,38 @@ def main() -> None:
 
     print(f"[INFO] Task: {TASK_NAME}")
     print(f"[INFO] Start index: {START_VIDEO_INDEX}")
-    print(f"[INFO] Selected videos: {len(selected_videos)}")
+    print(f"[INFO] Videos available from start index: {len(selected_videos)}")
+    print(f"[INFO] Target captures: {NUM_VIDEOS}")
     print(f"[INFO] Output dir: {TASK_OUTPUT_DIR}")
     print(f"[INFO] Annotation file: {ANNOTATIONS_PATH}")
 
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
 
     try:
+        captured_count = 0
+        stopped_early = False
         for offset, video_path in enumerate(selected_videos):
+            if captured_count >= NUM_VIDEOS:
+                break
             print(
                 f"[INFO] ---------- Playing video {offset + 1}/{len(selected_videos)}: "
-                f"{video_path.name}"
+                f"{video_path.name} | captured {captured_count}/{NUM_VIDEOS}"
             )
-            should_continue = play_and_maybe_capture(
+            result = play_and_maybe_capture(
                 video_path=video_path,
                 annotations=annotations,
             )
-            if not should_continue:
+            if result == "captured":
+                captured_count += 1
+            elif result in {"quit", "error"}:
+                stopped_early = True
                 print("[INFO] Stopped by user.")
                 break
+        if captured_count < NUM_VIDEOS and not stopped_early:
+            print(
+                f"[INFO] Finished with {captured_count}/{NUM_VIDEOS} captures. "
+                "No more videos available."
+            )
     finally:
         cv2.destroyAllWindows()
 
