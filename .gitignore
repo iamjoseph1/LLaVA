@@ -36,6 +36,13 @@ serve_images/
 
 # Dataset
 data_preprocess/droid_1_0_1
-data_preprocess/robotwin
+data_preprocess/robotwin/click_bell/franka_randomized_500/_traj_data
+data_preprocess/robotwin/click_bell/franka_randomized_500/data
+data_preprocess/robotwin/place_can_basket/franka_randomized_500/_traj_data
+data_preprocess/robotwin/place_can_basket/franka_randomized_500/data
+data_preprocess/robotwin/stamp_seal/franka_randomized_500/_traj_data
+data_preprocess/robotwin/stamp_seal/franka_randomized_500/data
+data_preprocess/robotwin/turn_switch/franka_randomized_500/_traj_data
+data_preprocess/robotwin/turn_switch/franka_randomized_500/data
 data_preprocess/roboverse
-data_preprocess/llava
+# data_preprocess/llava

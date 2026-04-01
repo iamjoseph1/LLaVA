@@ -16,7 +16,7 @@ DATASET_ROOT = CURRENT_DIR / "robotwin"
 TASK_NAME = "click_bell"
 TASK_VARIANT = "franka_randomized_500"
 START_VIDEO_INDEX = 0
-NUM_VIDEOS = 2
+NUM_VIDEOS = 5
 NEXT_VIDEO_DELAY_SECONDS = 1.0
 PLAYBACK_SPEED = 0.3
 
@@ -79,10 +79,10 @@ def save_annotations(annotations: list[dict]) -> None:
     ANNOTATIONS_PATH.write_text(json.dumps(annotations, indent=2))
 
 
-def build_annotation(image_path: Path, video_label: str, prompt: str) -> dict:
+def build_annotation(image_name: str, video_label: str, prompt: str) -> dict:
     return {
         "id": f"{TASK_NAME}_{video_label}",
-        "image": str(image_path.resolve()),
+        "image": image_name,
         "conversations": [
             {
                 "from": "human",
@@ -122,7 +122,7 @@ def save_capture(frame, video_label: str, prompt: str, annotations: list[dict]) 
     if not ok:
         raise RuntimeError(f"Failed to write image: {image_path}")
 
-    new_annotation = build_annotation(image_path, video_label, prompt)
+    new_annotation = build_annotation(image_name, video_label, prompt)
     image_path_str = new_annotation["image"]
     existing_index = next(
         (
@@ -198,9 +198,9 @@ def play_and_maybe_capture(
             return "quit"
 
     capture.release()
-    print(f"[INFO] Video ended without capture: {video_label}")
+    print(f"[INFO] Video ended without capture, skipping: {video_label}")
     cv2.waitKey(int(NEXT_VIDEO_DELAY_SECONDS * 1000))
-    return "ended"
+    return "skipped"
 
 
 def main() -> None:
