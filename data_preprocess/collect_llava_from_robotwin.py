@@ -13,10 +13,10 @@ except ImportError as exc:
 
 CURRENT_DIR = Path(__file__).resolve().parent
 DATASET_ROOT = CURRENT_DIR / "robotwin"
-TASK_NAME = "click_bell"
+TASK_NAME = "turn_switch" # 유일하게 [0,1,0,0,0,0]인 작업
 TASK_VARIANT = "franka_randomized_500"
-START_VIDEO_INDEX = 0
-NUM_VIDEOS = 5
+START_VIDEO_INDEX = 148
+NUM_VIDEOS = 1
 NEXT_VIDEO_DELAY_SECONDS = 1.0
 PLAYBACK_SPEED = 0.3
 
