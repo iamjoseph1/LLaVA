@@ -9,14 +9,15 @@ from huggingface_hub.utils import EntryNotFoundError
 # =========================
 REPO_ID = "TianxingChen/RoboTwin2.0"
 TASK_NAMES = [
-    "beat_block_hammer",
-    "click_bell",
-    "grab_roller", # 양팔작업
-    "pick_diverse_bottles", # 없음
+    # "beat_block_hammer",
+    # "click_bell", # randomized 500개 있음
+    # "grab_roller", # 양팔작업
+    # "pick_diverse_bottles", # 없음
     "place_can_basket",
-    "press_stapler",
+    # "press_stapler",
     "stamp_seal",
     "turn_switch", # 유일하게 [0,1,0,0,0,0]인 작업
+    # "put_object_cabinet", # 양팔작업, cabinet 열고 물체 집어넣는 2단계 작업
 ]
 OUT_DIR = "./robotwin"
 
@@ -41,7 +42,7 @@ def unzip_downloaded_zip(zip_path: str | Path, extract_dir: str | Path | None = 
     return extract_dir
 
 
-def download_franka_clean_50(task_name: str, out_dir: str | Path, token: str | None = None):
+def download(task_name: str, out_dir: str | Path, token: str | None = None):
     """
     Download:
         dataset/{task_name}/franka_clean_50.zip
@@ -54,8 +55,8 @@ def download_franka_clean_50(task_name: str, out_dir: str | Path, token: str | N
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    remote_path = f"dataset/{task_name}/franka_clean_50.zip"
-    local_name = f"{task_name}_franka_clean_50.zip"
+    remote_path = f"dataset/{task_name}/franka_randomized_500.zip"
+    local_name = f"{task_name}.zip"
     final_path = out_dir / local_name
 
     try:
@@ -83,4 +84,4 @@ def download_franka_clean_50(task_name: str, out_dir: str | Path, token: str | N
 
 if __name__ == "__main__":
     for task in TASK_NAMES:
-        download_franka_clean_50(task, OUT_DIR, token=HF_TOKEN)
+        download(task, OUT_DIR, token=HF_TOKEN)

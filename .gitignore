@@ -37,3 +37,5 @@ serve_images/
 # Dataset
 data_preprocess/droid_1_0_1
 data_preprocess/robotwin
+data_preprocess/roboverse
+data_preprocess/llava
