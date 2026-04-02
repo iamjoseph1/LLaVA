@@ -45,5 +45,5 @@ data_preprocess/robotwin/stamp_seal/franka_randomized_500/data
 data_preprocess/robotwin/turn_switch/franka_randomized_500/_traj_data
 data_preprocess/robotwin/turn_switch/franka_randomized_500/data
 data_preprocess/roboverse
-data_preprocess/mimicgen
+# data_preprocess/mimicgen
 # data_preprocess/llava
