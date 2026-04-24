@@ -88,6 +88,13 @@ class LlavaLlamaForCausalLM(LlamaForCausalLM, LlavaMetaForCausalLM):
                 image_sizes
             )
 
+        # Multimodal training builds embeddings directly in
+        # `prepare_inputs_labels_for_multimodal`, which bypasses the input
+        # embedding forward hook used by gradient checkpointing in k-bit LoRA.
+        # Make the checkpointed decoder see a grad-requiring input tensor.
+        if self.training and inputs_embeds is not None and self.model.gradient_checkpointing:
+            inputs_embeds.requires_grad_(True)
+
         return super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,

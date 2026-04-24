@@ -12,9 +12,9 @@ from huggingface_hub import hf_hub_download, HfApi
 # User settings
 # =========================
 REPO_ID = "amandlek/mimicgen_datasets"
-REMOTE_DIR = "robot"
-TASK_NAME = "square_d1_panda"
-OUT_DIR = Path(f"./mimicgen/robot/{TASK_NAME}")
+REMOTE_DIR = "core"
+TASK_NAME = "three_piece_assembly_d1"
+OUT_DIR = Path(f"./mimicgen/core/{TASK_NAME}")
 VIDEO_OUT_DIR = OUT_DIR / "video"
 STRUCTURE_SUFFIX = "_demo_structure.json"
 DEFAULT_VIDEO_FPS = 20.0

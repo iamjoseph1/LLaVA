@@ -11,12 +11,12 @@ except ImportError as exc:
 
 
 CURRENT_DIR = Path(__file__).resolve().parent
-DATASET_ROOT = CURRENT_DIR / "mimicgen" / "robot"
-TASK_NAME = "square_d1_panda"
+DATASET_ROOT = CURRENT_DIR / "mimicgen" / "core"
+TASK_NAME = "three_piece_assembly_d1"
 START_VIDEO_INDEX = 0
 NUM_VIDEOS = 100
 NEXT_VIDEO_DELAY_SECONDS = 1.0
-PLAYBACK_SPEED = 1.0
+PLAYBACK_SPEED = 0.9
 
 VIDEO_DIR = DATASET_ROOT / TASK_NAME / "video"
 INSTRUCTION_PATH = DATASET_ROOT / TASK_NAME / "instruction" / "instruction.txt"
@@ -72,13 +72,14 @@ def save_annotations(annotations: list[dict]) -> None:
 
 
 def build_annotation(image_name: str, video_label: str, human_prompt: str) -> dict:
+    image_reference = f"{TASK_NAME}/{image_name}"
     return {
         "id": f"{TASK_NAME}_{video_label}",
-        "image": image_name,
+        "image": image_reference,
         "conversations": [
             {
                 "from": "human",
-                "value": human_prompt,
+                "value": f"<image>\n{human_prompt}",
             },
             {
                 "from": "gpt",
@@ -114,6 +115,7 @@ def save_capture(
     annotations: list[dict],
 ) -> None:
     image_name = f"{TASK_NAME}_image_{video_label}.jpg"
+    image_reference = f"{TASK_NAME}/{image_name}"
     image_path = TASK_OUTPUT_DIR / image_name
     ok = cv2.imwrite(str(image_path), frame)
     if not ok:
@@ -124,7 +126,7 @@ def save_capture(
         (
             index
             for index, annotation in enumerate(annotations)
-            if annotation.get("image") == image_name
+            if annotation.get("image") == image_reference
         ),
         None,
     )

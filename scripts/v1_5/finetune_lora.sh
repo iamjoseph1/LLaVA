@@ -1,38 +1,40 @@
 #!/bin/bash
 
 deepspeed llava/train/train_mem.py \
-    --lora_enable True --lora_r 4 --lora_alpha 8 --mm_projector_lr 2e-5 \
+    --lora_enable True --lora_r 16 --lora_alpha 32 --mm_projector_lr 2e-5 \
     --deepspeed ./scripts/zero2.json \
-    --model_name_or_path unsloth/llava-1.5-7b-hf-bnb-4bit \
+    --model_name_or_path liuhaotian/llava-v1.5-7b \
     --version v1 \
-    --data_path /home/dyros/LLaVA/data_preprocess/llava/square_d1_panda/square_d1_panda_annotations.json \
-    --image_folder /home/dyros/LLaVA/data_preprocess/llava/square_d1_panda/ \
+    --data_path /home/dyros/LLaVA/data_preprocess/llava/finetune_dataset.json \
+    --image_folder /home/dyros/LLaVA/data_preprocess/llava/ \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --image_aspect_ratio pad \
-    --group_by_modality_length True \
+    --group_by_modality_length False \
     --bf16 True \
     --output_dir ./checkpoints/llava-1.5-7b-square-d1-lora \
-    --num_train_epochs 1 \
-    --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 1 \
+    --num_train_epochs 30 \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 8 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 100 \
-    --save_total_limit 1 \
+    --save_steps 50 \
     --learning_rate 2e-4 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --tf32 True \
-    --model_max_length 2048 \
+    --model_max_length 1024 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to none \
+    --report_to tensorboard \
     --bits 4
+
+
+    # --save_total_limit 1 \
