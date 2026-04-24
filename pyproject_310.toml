@@ -13,10 +13,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
 ]
 dependencies = [
-    "torch==2.1.2; python_version < '3.12'",
-    "torchvision==0.16.2; python_version < '3.12'",
-    "torch==2.2.2; python_version >= '3.12'",
-    "torchvision==0.17.2; python_version >= '3.12'",
+    "torch==2.1.2", "torchvision==0.16.2",
     "transformers==4.37.2", "tokenizers==0.15.1", "sentencepiece==0.1.99", "shortuuid",
     "accelerate==0.21.0", "peft==0.7.1", "bitsandbytes",
     "pydantic", "markdown2[all]", "numpy", "scikit-learn==1.2.2",
@@ -35,7 +32,7 @@ build = ["build", "twine"]
 # by the ROS2 system installation and must match the Python ABI used at runtime.
 # This extra only captures direct non-ROS helper libraries used by local ROS2
 # scripts in this repo.
-ros2 = ["Pillow"]
+# ros2 = ["Pillow"]
 
 [project.urls]
 "Homepage" = "https://llava-vl.github.io"

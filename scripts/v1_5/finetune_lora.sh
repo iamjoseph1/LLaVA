@@ -16,7 +16,7 @@ deepspeed llava/train/train_mem.py \
     --group_by_modality_length False \
     --bf16 True \
     --output_dir ./checkpoints/llava-1.5-7b-square-d1-lora \
-    --num_train_epochs 30 \
+    --num_train_epochs 10 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 8 \

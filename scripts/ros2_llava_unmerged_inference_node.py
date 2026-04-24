@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import ast
-from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -86,27 +85,34 @@ class LlavaUnmergedInferenceNode(Node):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__("llava_unmerged_inference_node")
         self.args = args
-        self.processed = False
+        self.inference_started = False
+        self.pending_image: Image.Image | None = None
+        self.tokenizer = None
+        self.model = None
+        self.image_processor = None
+        self.context_len = None
+        self.conv_mode = args.conv_mode
 
-        disable_torch_init()
+        # disable_torch_init()
+        #
+        # model_name = get_model_name_from_path(args.model_path)
+        # self.conv_mode = args.conv_mode or infer_conv_mode(model_name)
+        # self.get_logger().info(f"Loading model '{model_name}' with conv mode '{self.conv_mode}'")
+        #
+        # self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
+        #     args.model_path,
+        #     args.model_base,
+        #     model_name,
+        #     load_8bit=args.load_8bit,
+        #     load_4bit=args.load_4bit,
+        #     device=args.device,
+        # )
 
-        model_name = get_model_name_from_path(args.model_path)
-        self.conv_mode = args.conv_mode or infer_conv_mode(model_name)
-        self.get_logger().info(f"Loading model '{model_name}' with conv mode '{self.conv_mode}'")
-
-        self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
-            args.model_path,
-            args.model_base,
-            model_name,
-            load_8bit=args.load_8bit,
-            load_4bit=args.load_4bit,
-            device=args.device,
-        )
-
+        constraint_qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.publisher = self.create_publisher(
             Float64MultiArray,
-            "/sa_right_eef_constraint",
-            10,
+            "sa_right_eef_constraint",
+            constraint_qos,
         )
         image_qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.subscription = self.create_subscription(
@@ -115,8 +121,9 @@ class LlavaUnmergedInferenceNode(Node):
             self.image_callback,
             image_qos,
         )
+        self.inference_timer = self.create_timer(0.1, self.maybe_run_inference)
 
-        self.get_logger().info("Node ready. Waiting for first image on sa_front_overview/image_raw")
+        self.get_logger().info("Dummy node ready. Waiting for images on sa_front_overview/image_raw")
 
     def build_query(self) -> str:
         qs = self.args.instruction
@@ -169,29 +176,34 @@ class LlavaUnmergedInferenceNode(Node):
         return self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
     def image_callback(self, msg: RosImage) -> None:
-        if self.processed:
+        try:
+            self.pending_image = ros_image_to_pil(msg)
+            self.get_logger().debug("Received image. Inference will run outside the callback.")
+        except Exception as exc:
+            self.get_logger().error(f"Failed to reconstruct ROS image: {exc}")
+
+    def maybe_run_inference(self) -> None:
+        if self.inference_started or self.pending_image is None:
             return
-        self.processed = True
+
+        self.inference_started = True
+        image = self.pending_image
+        self.pending_image = None
 
         try:
-            image = ros_image_to_pil(msg)
-            output_text = self.run_inference(image)
+            # output_text = self.run_inference(image)
+            output_text = self.args.dummy_output
             action_vector = parse_action_vector(output_text)
 
             out_msg = Float64MultiArray()
             out_msg.data = action_vector
             self.publisher.publish(out_msg)
 
-            self.get_logger().info(f"Published {action_vector} to /sa_right_eef_constraint")
+            self.get_logger().info(f"Published {action_vector} to sa_right_eef_constraint")
         except Exception as exc:
             self.get_logger().error(f"Inference failed: {exc}")
         finally:
-            self.destroy_subscription(self.subscription)
-            self.create_timer(0.5, self._shutdown_once)
-
-    def _shutdown_once(self) -> None:
-        self.get_logger().info("Shutting down after one-shot inference")
-        rclpy.shutdown()
+            self.inference_started = False
 
 
 def parse_args() -> argparse.Namespace:
@@ -205,6 +217,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-p", default=None, type=float)
     parser.add_argument("--num-beams", default=1, type=int)
     parser.add_argument("--max-new-tokens", default=64, type=int)
+    parser.add_argument("--dummy-output", default="[0,0,1,0,0,0]", type=str)
     parser.add_argument("--load-8bit", action="store_true")
     parser.add_argument("--load-4bit", action="store_true")
     return parser.parse_args()

@@ -70,7 +70,7 @@
 - [Train](#train)
 - [Evaluation](#evaluation)
 
-## Install
+## Install (python 3.12)
 
 If you are not using Linux, do *NOT* proceed, see instructions for [macOS](https://github.com/haotian-liu/LLaVA/blob/main/docs/macOS.md) and [Windows](https://github.com/haotian-liu/LLaVA/blob/main/docs/Windows.md).
 
@@ -82,7 +82,7 @@ cd LLaVA
 
 2. Install Package
 ```Shell
-conda create -n llava python=3.10 -y
+conda create -n llava python=3.12 -y
 conda activate llava
 pip install --upgrade pip  # enable PEP 660 support
 pip install -e .
@@ -92,6 +92,12 @@ pip install -e .
 ```
 pip install -e ".[train]"
 python -m pip install --no-build-isolation "flash-attn<2.7"
+```
+
+4. Source & Install additional packages for ros2 jazzy
+```
+source /opt/ros/jazzy/setup.bash
+pip install -e ".[ros2]"
 ```
 ### Upgrade to latest code base
 
