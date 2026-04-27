@@ -91,21 +91,22 @@ class LlavaUnmergedInferenceNode(Node):
         self.model = None
         self.image_processor = None
         self.context_len = None
+        self.conv_mode = args.conv_mode
 
-        disable_torch_init()
-
-        model_name = get_model_name_from_path(args.model_path)
-        self.conv_mode = args.conv_mode or infer_conv_mode(model_name)
-        self.get_logger().info(f"Loading model '{model_name}' with conv mode '{self.conv_mode}'")
-
-        self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
-            args.model_path,
-            args.model_base,
-            model_name,
-            load_8bit=args.load_8bit,
-            load_4bit=args.load_4bit,
-            device=args.device,
-        )
+        # disable_torch_init()
+        #
+        # model_name = get_model_name_from_path(args.model_path)
+        # self.conv_mode = args.conv_mode or infer_conv_mode(model_name)
+        # self.get_logger().info(f"Loading model '{model_name}' with conv mode '{self.conv_mode}'")
+        #
+        # self.tokenizer, self.model, self.image_processor, self.context_len = load_pretrained_model(
+        #     args.model_path,
+        #     args.model_base,
+        #     model_name,
+        #     load_8bit=args.load_8bit,
+        #     load_4bit=args.load_4bit,
+        #     device=args.device,
+        # )
 
         constraint_qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.publisher = self.create_publisher(
@@ -122,7 +123,7 @@ class LlavaUnmergedInferenceNode(Node):
         )
         self.inference_timer = self.create_timer(0.1, self.maybe_run_inference)
 
-        self.get_logger().info("Inference node ready. Waiting for images on sa_front_overview/image_raw")
+        self.get_logger().info("Dummy node ready. Waiting for images on sa_front_overview/image_raw")
 
     def build_query(self) -> str:
         qs = self.args.instruction
@@ -147,9 +148,9 @@ class LlavaUnmergedInferenceNode(Node):
         image_size = image.size
         image_tensor = process_images([image], self.image_processor, self.model.config)
         if isinstance(image_tensor, list):
-            image_tensor = [img.to(self.model.device, dtype=self.model.dtype) for img in image_tensor]
+            image_tensor = [img.to(self.model.device, dtype=torch.float16) for img in image_tensor]
         else:
-            image_tensor = image_tensor.to(self.model.device, dtype=self.model.dtype)
+            image_tensor = image_tensor.to(self.model.device, dtype=torch.float16)
 
         input_ids = tokenizer_image_token(
             prompt,
@@ -190,7 +191,8 @@ class LlavaUnmergedInferenceNode(Node):
         self.pending_image = None
 
         try:
-            output_text = self.run_inference(image)
+            # output_text = self.run_inference(image)
+            output_text = self.args.dummy_output
             action_vector = parse_action_vector(output_text)
 
             out_msg = Float64MultiArray()
@@ -215,6 +217,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-p", default=None, type=float)
     parser.add_argument("--num-beams", default=1, type=int)
     parser.add_argument("--max-new-tokens", default=64, type=int)
+    parser.add_argument("--dummy-output", default="[0,0,1,0,0,0]", type=str)
     parser.add_argument("--load-8bit", action="store_true")
     parser.add_argument("--load-4bit", action="store_true")
     return parser.parse_args()
