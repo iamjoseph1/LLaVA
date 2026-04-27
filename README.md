@@ -86,9 +86,13 @@ conda create -n llava python=3.12 -y
 conda activate llava
 pip install --upgrade pip  # enable PEP 660 support
 pip install -e .
+
+# for RTX 5090
+pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -U bitsandbytes
 ```
 
-3. Install additional packages for training cases
+3. (ONLY TRAINING & NOT INFERENCE) Install additional packages
 ```
 pip install -e ".[train]"
 python -m pip install --no-build-isolation "flash-attn<2.7"

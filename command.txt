@@ -1,0 +1,29 @@
+  
+# inference (threading)
+
+python scripts/ros2_llava_unmerged_inference_node.py \
+--model-path /home/dyros/LLaVA/checkpoints/llava-1.5-7b-square-d1-lora \
+--model-base liuhaotian/llava-v1.5-7b \
+--instruction "Execute insertion into a small slot." \
+--conv-mode v1 \
+--max-new-tokens 64
+
+# inference (threepieceassembly)
+
+python scripts/ros2_llava_unmerged_inference_node.py \
+--model-path /home/dyros/LLaVA/checkpoints/llava-1.5-7b-square-d1-lora \
+--model-base liuhaotian/llava-v1.5-7b \
+--instruction "Insert the grasped block onto the assembly base." \
+--conv-mode v1 \
+--max-new-tokens 64
+
+# inference test (square)
+
+python scripts/test_llava_unmerged_inference_dummy.py \
+--model-path /home/dyros/LLaVA/checkpoints/llava-1.5-7b-square-d1-lora \
+--model-base liuhaotian/llava-v1.5-7b \
+--image-file /home/dyros/LLaVA/data_preprocess/llava/square_d1_panda/square_d1_panda_image_demo_0.jpg \
+--instruction "Insert the hole onto the peg." \
+--conv-mode v1 \
+--max-new-tokens 64 \
+--min-new-tokens 8

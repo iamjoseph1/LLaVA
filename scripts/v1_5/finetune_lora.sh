@@ -1,8 +1,7 @@
 #!/bin/bash
 
-deepspeed llava/train/train_mem.py \
+python llava/train/train_mem.py \
     --lora_enable True --lora_r 16 --lora_alpha 32 --mm_projector_lr 2e-5 \
-    --deepspeed ./scripts/zero2.json \
     --model_name_or_path liuhaotian/llava-v1.5-7b \
     --version v1 \
     --data_path /home/dyros/LLaVA/data_preprocess/llava/finetune_dataset.json \
