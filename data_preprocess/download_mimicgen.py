@@ -13,7 +13,7 @@ from huggingface_hub import hf_hub_download, HfApi
 # =========================
 REPO_ID = "amandlek/mimicgen_datasets"
 REMOTE_DIR = "core"
-TASK_NAME = "three_piece_assembly_d1"
+TASK_NAME = "hammer_cleanup_d1"
 OUT_DIR = Path(f"./mimicgen/core/{TASK_NAME}")
 VIDEO_OUT_DIR = OUT_DIR / "video"
 STRUCTURE_SUFFIX = "_demo_structure.json"

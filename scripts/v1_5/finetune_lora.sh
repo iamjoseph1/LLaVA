@@ -4,7 +4,7 @@ python llava/train/train_mem.py \
     --lora_enable True --lora_r 16 --lora_alpha 32 --mm_projector_lr 2e-5 \
     --model_name_or_path liuhaotian/llava-v1.5-7b \
     --version v1 \
-    --data_path /home/dyros/LLaVA/data_preprocess/llava/finetune_dataset.json \
+    --data_path /home/dyros/LLaVA/data_preprocess/llava/finetune_dataset_from_ours.json \
     --image_folder /home/dyros/LLaVA/data_preprocess/llava/ \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
@@ -19,7 +19,8 @@ python llava/train/train_mem.py \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 8 \
-    --evaluation_strategy "no" \
+    --evaluation_strategy "steps" \
+    --eval_steps 50 \
     --save_strategy "steps" \
     --save_steps 50 \
     --learning_rate 2e-4 \
@@ -32,6 +33,8 @@ python llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+    --eval_split_ratio 0.1 \
+    --data_split_seed 42 \
     --report_to tensorboard \
     --bits 4
 

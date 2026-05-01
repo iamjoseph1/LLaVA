@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 import json
 import logging
 import pathlib
+import random
 from typing import Dict, Optional, Sequence, List
 
 import torch
@@ -74,6 +75,8 @@ class DataArguments:
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
     image_aspect_ratio: str = 'square'
+    eval_split_ratio: float = field(default=0.0)
+    data_split_seed: int = field(default=42)
 
 
 @dataclass
@@ -661,11 +664,15 @@ def preprocess(
 class LazySupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
-    def __init__(self, data_path: str,
+    def __init__(self, data_path: Optional[str],
                  tokenizer: transformers.PreTrainedTokenizer,
-                 data_args: DataArguments):
+                 data_args: DataArguments,
+                 list_data_dict: Optional[List[Dict]] = None):
         super(LazySupervisedDataset, self).__init__()
-        list_data_dict = json.load(open(data_path, "r"))
+        if list_data_dict is None:
+            if data_path is None:
+                raise ValueError("Either data_path or list_data_dict must be provided.")
+            list_data_dict = json.load(open(data_path, "r"))
 
         rank0_print("Formatting inputs...Skip in lazy mode")
         self.tokenizer = tokenizer
@@ -779,12 +786,53 @@ class DataCollatorForSupervisedDataset(object):
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
-    train_dataset = LazySupervisedDataset(tokenizer=tokenizer,
-                                data_path=data_args.data_path,
-                                data_args=data_args)
+    with open(data_args.data_path, "r") as f:
+        list_data_dict = json.load(f)
+
+    eval_dataset = None
+    train_records = list_data_dict
+    eval_split_ratio = data_args.eval_split_ratio
+
+    if eval_split_ratio < 0.0 or eval_split_ratio >= 1.0:
+        raise ValueError("eval_split_ratio must be in the range [0.0, 1.0).")
+
+    if eval_split_ratio > 0.0:
+        shuffled_indices = list(range(len(list_data_dict)))
+        random.Random(data_args.data_split_seed).shuffle(shuffled_indices)
+        eval_size = max(1, int(len(list_data_dict) * eval_split_ratio))
+        if eval_size >= len(list_data_dict):
+            raise ValueError("Validation split leaves no training samples.")
+
+        eval_indices = set(shuffled_indices[:eval_size])
+        train_records = [
+            sample for idx, sample in enumerate(list_data_dict)
+            if idx not in eval_indices
+        ]
+        eval_records = [
+            sample for idx, sample in enumerate(list_data_dict)
+            if idx in eval_indices
+        ]
+
+        rank0_print(
+            f"Using {len(train_records)} training samples and "
+            f"{len(eval_records)} validation samples."
+        )
+        eval_dataset = LazySupervisedDataset(
+            tokenizer=tokenizer,
+            data_path=None,
+            data_args=data_args,
+            list_data_dict=eval_records,
+        )
+
+    train_dataset = LazySupervisedDataset(
+        tokenizer=tokenizer,
+        data_path=None,
+        data_args=data_args,
+        list_data_dict=train_records,
+    )
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(train_dataset=train_dataset,
-                eval_dataset=None,
+                eval_dataset=eval_dataset,
                 data_collator=data_collator)
 
 

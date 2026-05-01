@@ -12,7 +12,7 @@ except ImportError as exc:
 
 CURRENT_DIR = Path(__file__).resolve().parent
 DATASET_ROOT = CURRENT_DIR / "mimicgen" / "core"
-TASK_NAME = "three_piece_assembly_d1"
+TASK_NAME = "hammer_cleanup_d1"
 START_VIDEO_INDEX = 0
 NUM_VIDEOS = 100
 NEXT_VIDEO_DELAY_SECONDS = 1.0
