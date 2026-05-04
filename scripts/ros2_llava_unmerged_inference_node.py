@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import time
 
 import numpy as np
 from PIL import Image
@@ -153,6 +154,8 @@ class LlavaUnmergedInferenceNode(Node):
         self.debug_image_dir = Path(args.debug_image_dir)
         self.debug_image_dir.mkdir(parents=True, exist_ok=True)
         self.saved_image_count = 0
+        self.active_publish_msg: Float64MultiArray | None = None
+        self.publish_until_monotonic = 0.0
 
         disable_torch_init()
 
@@ -170,6 +173,7 @@ class LlavaUnmergedInferenceNode(Node):
             image_qos,
         )
         self.inference_timer = self.create_timer(0.1, self.maybe_run_inference)
+        self.publish_timer = self.create_timer(0.1, self.maybe_publish_result)
 
         self.get_logger().info(
             f"Inference node ready. Waiting for images on sa_front_overview/image_raw "
@@ -278,14 +282,29 @@ class LlavaUnmergedInferenceNode(Node):
 
             out_msg = Float64MultiArray()
             out_msg.data = action_vector
-            self.publisher.publish(out_msg)
+            self.active_publish_msg = out_msg
+            self.publish_until_monotonic = time.monotonic() + 2.0
 
-            self.get_logger().info(f"Published {action_vector} to sa_right_eef_constraint")
+            self.get_logger().info(
+                f"Will publish {action_vector} to sa_right_eef_constraint for 2 seconds"
+            )
         except Exception as exc:
             self.get_logger().error(f"Inference failed: {exc}")
             self.pending_image = image
         finally:
             self.inference_started = False
+
+    def maybe_publish_result(self) -> None:
+        if self.active_publish_msg is None:
+            return
+
+        if time.monotonic() >= self.publish_until_monotonic:
+            self.get_logger().info("Stopped publishing inference result after 2 seconds")
+            self.active_publish_msg = None
+            self.publish_until_monotonic = 0.0
+            return
+
+        self.publisher.publish(self.active_publish_msg)
 
 
 def parse_args() -> argparse.Namespace:
